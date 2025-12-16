@@ -1,0 +1,40 @@
+version: "3.9"
+services:
+  db:
+    image: mysql:8.0
+    container_name: mysql-db_sistema
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: db_sistema
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"   # root sin contraseña
+      MYSQL_ROOT_HOST: "%"                # permite entrar desde host
+      TZ: America/Bogota
+    ports:
+      - "3307:3306"                       # host:container (evita conflicto con Laragon)
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8
+      - --collation-server=utf8_general_ci
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+      # Coloca .sql/.sh en ./init para inicializar datos si quieres
+      - ./init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: pma-db_sistema
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      PMA_HOST: db
+      PMA_USER: root
+      PMA_PASSWORD: ""                    # sin contraseña
+      UPLOAD_LIMIT: 100M
+    ports:
+      - "8081:80"                         # abre en http://localhost:8081
